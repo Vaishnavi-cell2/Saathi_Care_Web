@@ -1,53 +1,77 @@
 
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Bell, 
   Wallet, 
-  Calendar, 
   Briefcase, 
   Smile, 
   ChevronRight,
   TrendingUp,
   Clock,
-  Sparkles
+  Sparkles,
+  LogOut
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { getAIParentingInsight, getAIJobMatch } from '../services/geminiService';
+import { dashboardService } from '../services/dashboardService';
+import { authService } from '../services/authService';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 const Dashboard: React.FC = () => {
+  const navigate = useNavigate();
   const [insight, setInsight] = useState<string>("Loading your daily insight...");
   const [jobs, setJobs] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const budgetData = [
-    { name: 'Rent', value: 1200 },
-    { name: 'Groceries', value: 450 },
-    { name: 'School', value: 300 },
-    { name: 'Utilities', value: 200 },
-    { name: 'Savings', value: 500 },
-  ];
+  const [reminders, setReminders] = useState<any[]>([]);
+  const [budget, setBudget] = useState<any[]>([]);
+  const [userName, setUserName] = useState<string>('Parent');
 
   const COLORS = ['#8b5cf6', '#a78bfa', '#c4b5fd', '#ddd6fe', '#ede9fe'];
 
   useEffect(() => {
-    const fetchData = async () => {
-      const text = await getAIParentingInsight();
-      const jobList = await getAIJobMatch();
-      setInsight(text);
-      setJobs(jobList);
-      setLoading(false);
+    const checkAuth = async () => {
+      const isAuth = await authService.isAuthenticated();
+      if (!isAuth && !localStorage.getItem('saathicare_token')) {
+        navigate('/login');
+        return;
+      }
+      
+      const name = localStorage.getItem('user_name');
+      if (name) setUserName(name);
+      
+      fetchData();
     };
-    fetchData();
-  }, []);
+
+    const fetchData = async () => {
+      try {
+        const [aiInsight, aiJobs, dbReminders, dbBudget] = await Promise.all([
+          getAIParentingInsight(),
+          getAIJobMatch(),
+          dashboardService.getReminders(),
+          dashboardService.getBudgetData()
+        ]);
+        
+        setInsight(aiInsight);
+        setJobs(aiJobs);
+        setReminders(dbReminders);
+        setBudget(dbBudget);
+      } catch (error) {
+        console.error("Dashboard Load Error:", error);
+      }
+    };
+
+    checkAuth();
+  }, [navigate]);
+
+  const handleLogout = async () => {
+    await authService.logout();
+  };
 
   const containerVariants = {
     hidden: { opacity: 0 },
     show: {
       opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
+      transition: { staggerChildren: 0.1 }
     }
   };
 
@@ -61,15 +85,22 @@ const Dashboard: React.FC = () => {
       <div className="max-w-7xl mx-auto">
         <header className="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-4">
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-            <h1 className="text-3xl font-bold font-outfit text-slate-900">Hello, Sarah!</h1>
-            <p className="text-slate-500">Here's your overview for today, June 12th.</p>
+            <h1 className="text-3xl font-bold font-outfit text-slate-900">Hello, {userName}!</h1>
+            <p className="text-slate-500">Connected to Supabase Cloud Backend.</p>
           </motion.div>
           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex items-center space-x-4">
             <button className="relative p-2 bg-white rounded-xl shadow-sm border border-slate-200 hover:bg-slate-50 transition-all">
               <Bell className="w-6 h-6 text-slate-600" />
               <span className="absolute top-0 right-0 w-3 h-3 bg-rose-500 border-2 border-white rounded-full"></span>
             </button>
-            <img src="https://picsum.photos/seed/sarah/100/100" alt="Profile" className="w-12 h-12 rounded-full border-2 border-purple-200" />
+            <button 
+              onClick={handleLogout}
+              className="p-2 bg-white rounded-xl shadow-sm border border-slate-200 hover:bg-rose-50 text-slate-600 hover:text-rose-600 transition-all"
+              title="Logout"
+            >
+              <LogOut className="w-6 h-6" />
+            </button>
+            <img src={`https://picsum.photos/seed/${userName}/100/100`} alt="Profile" className="w-12 h-12 rounded-full border-2 border-purple-200" />
           </motion.div>
         </header>
 
@@ -81,10 +112,7 @@ const Dashboard: React.FC = () => {
           className="bg-purple-600 rounded-[2.5rem] p-8 md:p-12 text-white mb-10 relative overflow-hidden shadow-2xl shadow-purple-200"
         >
           <motion.div 
-            animate={{ 
-              scale: [1, 1.2, 1],
-              rotate: [0, 5, 0]
-            }}
+            animate={{ scale: [1, 1.2, 1], rotate: [0, 5, 0] }}
             transition={{ duration: 8, repeat: Infinity }}
             className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-20 -mt-20"
           ></motion.div>
@@ -107,41 +135,38 @@ const Dashboard: React.FC = () => {
           animate="show"
           className="grid grid-cols-1 lg:grid-cols-3 gap-8"
         >
-          {/* Main Content (Reminders & Budget) */}
           <div className="lg:col-span-2 space-y-8">
-            {/* Today's Reminders */}
+            {/* Today's Reminders from Supabase */}
             <motion.div variants={itemVariants} className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-xl font-bold font-outfit flex items-center gap-2">
                   <Clock className="w-5 h-5 text-purple-600" /> Today's Reminders
                 </h3>
-                <button className="text-purple-600 text-sm font-bold hover:underline">View All</button>
+                <button className="text-purple-600 text-sm font-bold hover:underline">Add New</button>
               </div>
               <div className="space-y-4">
-                {[
-                  { title: "Oliver's Pediatrician Appt", time: "10:30 AM", type: "Health" },
-                  { title: "Electric Bill Due", time: "EOD", type: "Finance" },
-                  { title: "Pack Lunch for Field Trip", time: "Tonight", type: "School" }
-                ].map((rem, i) => (
+                {reminders.length > 0 ? reminders.map((rem, i) => (
                   <motion.div 
                     whileHover={{ x: 5 }}
                     key={i} 
                     className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl hover:bg-purple-50 transition-colors cursor-pointer"
                   >
                     <div className="flex items-center space-x-4">
-                      <div className={`w-2 h-10 rounded-full ${i % 2 === 0 ? 'bg-purple-500' : 'bg-rose-500'}`}></div>
+                      <div className={`w-2 h-10 rounded-full ${rem.type === 'health' ? 'bg-rose-500' : rem.type === 'finance' ? 'bg-emerald-500' : 'bg-purple-500'}`}></div>
                       <div>
                         <h4 className="font-bold text-slate-800">{rem.title}</h4>
-                        <p className="text-sm text-slate-500">{rem.type}</p>
+                        <p className="text-sm text-slate-500 capitalize">{rem.type}</p>
                       </div>
                     </div>
                     <span className="font-semibold text-slate-600">{rem.time}</span>
                   </motion.div>
-                ))}
+                )) : (
+                  <div className="text-center py-4 text-slate-400">Loading reminders...</div>
+                )}
               </div>
             </motion.div>
 
-            {/* Budget Overview */}
+            {/* Budget from Supabase */}
             <motion.div variants={itemVariants} className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100">
               <div className="flex items-center justify-between mb-8">
                 <h3 className="text-xl font-bold font-outfit flex items-center gap-2">
@@ -149,18 +174,18 @@ const Dashboard: React.FC = () => {
                 </h3>
                 <div className="flex items-center gap-2 text-sm text-slate-500">
                   <TrendingUp className="w-4 h-4 text-emerald-500" />
-                  <span>On track this month</span>
+                  <span>Synced</span>
                 </div>
               </div>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={budgetData}>
+                  <BarChart data={budget}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                     <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} />
                     <YAxis hide />
                     <Tooltip cursor={{fill: '#f8fafc'}} contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)'}} />
                     <Bar dataKey="value" radius={[8, 8, 0, 0]}>
-                      {budgetData.map((entry, index) => (
+                      {budget.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Bar>
@@ -170,9 +195,7 @@ const Dashboard: React.FC = () => {
             </motion.div>
           </div>
 
-          {/* Sidebar (Jobs & Wellness) */}
           <div className="space-y-8">
-            {/* Job Suggestions */}
             <motion.div variants={itemVariants} className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100">
               <h3 className="text-xl font-bold font-outfit mb-6 flex items-center gap-2">
                 <Briefcase className="w-5 h-5 text-blue-600" /> AI Job Matches
@@ -188,14 +211,11 @@ const Dashboard: React.FC = () => {
                       <h4 className="font-bold text-slate-800 group-hover:text-blue-600">{job.trim()}</h4>
                       <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-blue-600" />
                     </div>
-                    <p className="text-xs text-slate-500 mt-1 uppercase tracking-wider font-bold">Remote • Flexible</p>
                   </motion.div>
                 ))}
               </div>
-              <button className="w-full mt-6 py-3 text-blue-600 font-bold text-sm border-2 border-blue-100 rounded-xl hover:bg-blue-50 transition-all">Explore All Jobs</button>
             </motion.div>
 
-            {/* Mental Wellness */}
             <motion.div variants={itemVariants} className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100">
               <h3 className="text-xl font-bold font-outfit mb-6 flex items-center gap-2">
                 <Smile className="w-5 h-5 text-amber-500" /> Wellness Status
@@ -214,14 +234,13 @@ const Dashboard: React.FC = () => {
                   </svg>
                   <span className="absolute text-2xl font-bold text-amber-600">22%</span>
                 </div>
-                <p className="mt-4 font-bold text-amber-700">Doing Great!</p>
               </div>
               <motion.button 
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className="w-full mt-6 py-4 bg-amber-500 text-white font-bold rounded-2xl hover:bg-amber-600 transition-all shadow-lg shadow-amber-100"
+                className="w-full mt-6 py-4 bg-amber-500 text-white font-bold rounded-2xl shadow-lg shadow-amber-100"
               >
-                Start 5min Meditation
+                Start Meditation
               </motion.button>
             </motion.div>
           </div>

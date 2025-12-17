@@ -1,36 +1,64 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Heart, Mail, Lock, Phone } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Heart, Mail, Lock } from 'lucide-react';
+import { authService } from '../services/authService';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    navigate('/dashboard');
+    setLoading(true);
+    setError('');
+
+    try {
+      await authService.login(email, password);
+      navigate('/dashboard');
+    } catch (err: any) {
+      setError(err.message || 'Failed to login. Please check your credentials.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-purple-50/50">
-      <div className="max-w-md w-full">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="max-w-md w-full"
+      >
         <div className="text-center mb-10">
           <div className="inline-flex items-center justify-center bg-purple-600 p-3 rounded-2xl mb-4 shadow-lg shadow-purple-200">
             <Heart className="w-8 h-8 text-white fill-current" />
           </div>
-          <h1 className="text-3xl font-bold font-outfit text-slate-900">Welcome Back to SaathiCare</h1>
-          <p className="text-slate-500 mt-2">Take a moment for yourself. We're here to help.</p>
+          <h1 className="text-3xl font-bold font-outfit text-slate-900">Welcome Back</h1>
+          <p className="text-slate-500 mt-2">Connecting you to your support system.</p>
         </div>
 
         <div className="bg-white p-8 rounded-3xl shadow-xl border border-purple-100">
+          {error && (
+            <div className="mb-4 p-3 bg-rose-50 border border-rose-100 text-rose-600 text-sm rounded-xl">
+              {error}
+            </div>
+          )}
+          
           <form onSubmit={handleLogin} className="space-y-5">
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1">Email or Phone</label>
+              <label className="block text-sm font-semibold text-slate-700 mb-1">Email</label>
               <div className="relative">
                 <Mail className="absolute left-3 top-3.5 w-5 h-5 text-slate-400" />
                 <input 
-                  type="text" 
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                  type="email" 
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all"
                   placeholder="name@example.com"
                   required
                 />
@@ -43,32 +71,29 @@ const Login: React.FC = () => {
                 <Lock className="absolute left-3 top-3.5 w-5 h-5 text-slate-400" />
                 <input 
                   type="password" 
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all"
                   placeholder="••••••••"
                   required
                 />
               </div>
             </div>
 
-            <div className="flex items-center justify-between text-sm">
-              <label className="flex items-center text-slate-600">
-                <input type="checkbox" className="mr-2 rounded border-slate-300 text-purple-600 focus:ring-purple-500" />
-                Remember me
-              </label>
-              <a href="#" className="text-purple-600 font-semibold hover:underline">Forgot password?</a>
-            </div>
-
             <button 
               type="submit"
-              className="w-full bg-purple-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-purple-700 transition-all shadow-lg shadow-purple-100"
+              disabled={loading}
+              className="w-full bg-purple-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-purple-700 transition-all shadow-lg shadow-purple-100 flex items-center justify-center"
             >
-              Sign In
+              {loading ? (
+                <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+              ) : 'Sign In'}
             </button>
           </form>
 
           <div className="my-8 flex items-center">
             <div className="flex-grow border-t border-slate-100"></div>
-            <span className="px-4 text-sm text-slate-400">OR</span>
+            <span className="px-4 text-sm text-slate-400 uppercase tracking-widest font-bold">OR</span>
             <div className="flex-grow border-t border-slate-100"></div>
           </div>
 
@@ -79,9 +104,9 @@ const Login: React.FC = () => {
         </div>
 
         <p className="text-center mt-8 text-slate-600">
-          New here? <Link to="/login" className="text-purple-600 font-bold hover:underline">Create an account</Link>
+          New to SaathiCare? <Link to="/login" className="text-purple-600 font-bold hover:underline">Join us today</Link>
         </p>
-      </div>
+      </motion.div>
     </div>
   );
 };
