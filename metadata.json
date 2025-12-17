@@ -1,0 +1,8 @@
+{
+  "name": "SaathiCare",
+  "description": "An AI-powered unified platform designed to empower single parents with budgeting, job matching, health tracking, and mental wellness support.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
