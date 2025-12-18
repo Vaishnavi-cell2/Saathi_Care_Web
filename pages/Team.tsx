@@ -3,12 +3,11 @@ import React from 'react';
 import { Linkedin, Mail, Github } from 'lucide-react';
 
 const Team: React.FC = () => {
-  // Added college property to all member objects to fix property access error on line 32
   const members = [
-    { name: "Vaishnavi Verma", role: "Lead", college: "Babu Banarasi Das University", specialization: "Cyber Security", img: "https://picsum.photos/seed/v1/400/400" },
-    { name: "Sneha Raj", role: "Developer", college: "Amity University", specialization: "Computer Science & Engg", img: "https://picsum.photos/seed/s1/400/400" },
-    { name: "Kumar Sambhava", role: "Developer", college: "Babu Banarasi Das University", specialization: "Cyber Security", img: "https://picsum.photos/seed/k1/400/400" },
-    { name: "Ashutosh Yadav", role: "Developer", college: "Galgotias University", specialization: "Computer Science & Engg", img: "https://picsum.photos/seed/m1/400/400" }
+    { name: "Vaishnavi Verma", role: "Lead", specialization: "Cyber Security", img: "https://picsum.photos/seed/v1/400/400" },
+    { name: "Sneha Raj", role: "Developer", specialization: "Computer Science & Engg", img: "https://picsum.photos/seed/s1/400/400" },
+    { name: "Kumar Sambhava", role: "Developer", specialization: "Cyber Security", img: "https://picsum.photos/seed/k1/400/400" },
+    { name: "Ashutosh Yadav", role: "Developer", specialization: "Computer Science & Engg", img: "https://picsum.photos/seed/m1/400/400" }
   ];
 
   return (
@@ -30,7 +29,6 @@ const Team: React.FC = () => {
               <h3 className="text-xl font-bold font-outfit text-slate-900 mb-1">{member.name}</h3>
               <p className="text-purple-600 font-bold text-sm mb-4 uppercase tracking-tighter">{member.role}</p>
               <div className="text-slate-500 text-sm mb-6">
-                <p className="font-semibold">{member.college}</p>
                 <p>{member.specialization}</p>
               </div>
               <div className="flex justify-center space-x-3">

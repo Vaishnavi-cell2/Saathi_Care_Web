@@ -5,7 +5,6 @@ import React from 'react';
 export interface TeamMember {
   name: string;
   role: string;
-  college: string;
   specialization: string;
   image: string;
 }
